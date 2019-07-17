@@ -17,6 +17,7 @@ nltk.download('wordnet')
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
+#Creating the vectorizer for the raw text
 text_vectorizer = TfidfVectorizer(
 	tokenizer = None,
 	preprocessor = None,
@@ -29,6 +30,7 @@ text_vectorizer = TfidfVectorizer(
 	norm = None
 	)
 
+#Creating the vectorizer for the Parts of Speech of the text
 pos_vectorizer = TfidfVectorizer(
 	tokenizer=None,
 	lowercase=False,
@@ -53,6 +55,12 @@ with open('imdb_labelled.txt') as f:
 		raw_text_data.append(raw_text[:-2])
 		labels.append(int(label[0]))
 
+'''
+Preprocessing the data
+Part 1. Removing Stop Words, Converting to lowercase
+Part 2. Removing Special Characters
+Part 3. Lemmatizing the data
+'''
 def remove_stopwords(text):
 	words = word_tokenize(text)
 	output_text = []
@@ -74,8 +82,12 @@ def preprocessing_data(raw_data, lemmatizer):
 		preprocessed_data.append(data)
 	return preprocessed_data
 
-def pos(tokenized_tweet):
-	return nltk.pos_tag(tokenized_tweet)
+
+'''
+Getting the POS for the raw text. pos() gets the POS for the sentence and pos_data() gets it for the entire text.
+'''
+def pos(data):
+	return nltk.pos_tag(data)
 
 def pos_data(pre_data):
 	posData = []
@@ -87,20 +99,26 @@ def pos_data(pre_data):
 	return posData
 
 pre_data = preprocessing_data(raw_text_data, lemmatizer)
+
 pos_pre_data = pos_data(pre_data)
 
 pre_data = text_vectorizer.fit_transform(pd.Series(pre_data)).toarray()
 pos_data = pos_vectorizer.fit_transform(pd.Series(pos_pre_data)).toarray()
 
+#Combining the features of both TFIDFs and splitting into train and test data
 train_data = np.concatenate((pre_data, pos_data), axis = 1)
 train_x, test_x, train_y, test_y = train_test_split(train_data, labels)
 
+#Logistic Regression Classifer : Score 0.75
 log_reg = LogisticRegression()
 log_reg.fit(train_x, train_y)
 
 print(log_reg.score(test_x, test_y))
 
+#Decision Tree Classifer : Score 0.68
 dec_tree = DecisionTreeClassifier()
 dec_tree.fit(train_x, train_y)
 
 print(dec_tree.score(test_x, test_y))
+
+#Scores may fluctuate due to random initialization of weights.
